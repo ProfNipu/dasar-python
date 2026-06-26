@@ -2118,5 +2118,14 @@
         })();
 </script>
 {% block extra_js %}{% endblock %}
+
+<div id="fotoPreviewModal" class="fixed inset-0 z-[9999] hidden" role="dialog" aria-modal="true">
+  <div data-modal-overlay class="fixed inset-0 transition-opacity duration-300 opacity-0" style="background-color: rgba(0,0,0,0.75);"></div>
+  <div class="fixed inset-0 flex items-center justify-center p-4">
+    <div data-modal-panel class="relative transform transition-all duration-300 opacity-0 scale-95 translate-y-2">
+      <div data-modal-content class="relative"></div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
