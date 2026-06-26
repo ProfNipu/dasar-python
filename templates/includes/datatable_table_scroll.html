@@ -1,7 +1,9 @@
 {% load render_table from django_tables2 %}
-
-<div class="overflow-x-auto">
+{% if table.base_columns or table.model %}
+<div id="{{ wrap_id|default:'table-content' }}" class="overflow-x-auto"{% if is_bkn %} data-is-bkn="true"{% endif %}>
     <div class="w-full {{ min_w_class|default:'min-w-[1100px]' }}">
         {% render_table table %}
     </div>
+</div>
+{% endif %}
 </div>

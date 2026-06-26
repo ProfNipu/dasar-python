@@ -27,7 +27,7 @@
     
     <!-- Reusable JavaScript -->
     <script src="{% static 'js/app.js' %}?v=3.1"></script>
-    <script src="{% static 'js/modal-helper.js' %}?v=1.4"></script>
+    <script src="{% static 'js/modal-helper.js' %}?v=1.6"></script>
     <script src="{% static 'js/lucide.min.js' %}?v=1.1"></script>
     <script src="{% static 'js/icon-picker.js' %}?v=1.9.17"></script>
     
@@ -128,6 +128,23 @@
     /* Ensure native <select> hidden when enhanced to avoid duplicate dropdowns */
     select[data-select-enhanced="1"] { display: none !important; margin: 0 !important; padding: 0 !important; border: 0 !important; outline: 0 !important; }
     [data-select-enhanced-wrapper] select { display: none !important; }
+    
+    /* Hide any duplicate enhanced wrappers - keep only the first one */
+    [data-select-enhanced-wrapper] + [data-select-enhanced-wrapper] { display: none !important; }
+    
+    /* Ensure select inside wrapper is always hidden */
+    [data-select-enhanced-wrapper] > select { 
+        display: none !important; 
+        position: absolute !important;
+        left: -9999px !important;
+        width: 0 !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        pointer-events: none !important;
+        visibility: hidden !important;
+    }
     
         /* User Dropdown Styles */
     .user-menu-btn {
@@ -950,6 +967,7 @@
     .notif-overlay.active { opacity: 1; visibility: visible; }
     @media (max-width: 900px) { .activity-panel-btn { display: none !important; } }
     </style>
+    <link href="{% static 'css/animations.css' %}?v=1.0" rel="stylesheet">
 </head>
 <body hx-on:form-success="(function(){try{var d=event.detail||{};var msg=d.message||'Berhasil';var url=d.redirect;try{if(document.activeElement)document.activeElement.blur();}catch(e){}try{window.scroll({top:0,behavior:'smooth'});}catch(e){try{window.scrollTo(0,0);}catch(e2){}}var mc=document.querySelector('.main-content');if(mc){try{mc.scroll({top:0,behavior:'smooth'});}catch(e){try{mc.scrollTo(0,0);}catch(e2){}}}if(window.Swal){Swal.fire({icon:'success',title:'Berhasil',text:msg,allowOutsideClick:false,allowEscapeKey:false,confirmButtonText:'OK',focusConfirm:true}).then(function(){if(url) window.location=url;});}else{if(url) window.location=url;}}catch(e){}})()" hx-on:form-invalid="(function(){try{var d=event.detail||{};var errs=d.errors||[];try{if(document.activeElement)document.activeElement.blur();}catch(e){}try{window.scroll({top:0,behavior:'smooth'});}catch(e){try{window.scrollTo(0,0);}catch(e2){}}var mc=document.querySelector('.main-content');if(mc){try{mc.scroll({top:0,behavior:'smooth'});}catch(e){try{mc.scrollTo(0,0);}catch(e2){}}}if(window.Swal){Swal.fire({icon:'error',title:'Periksa kembali input Anda',html:'<ul style=\'text-align:left;margin-left:1rem\'>' + errs.map(function(e){return '<li>'+e+'</li>';}).join('') + '</ul>',allowOutsideClick:false,allowEscapeKey:false,confirmButtonText:'OK',focusConfirm:true});}}catch(e){}})()">
     <div id="page-loading-overlay" style="position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(17,24,39,0.35);backdrop-filter:blur(1px);">
@@ -997,6 +1015,23 @@
             document.title = baseTitle + ' | ' + t;
           } else {
             document.title = baseTitle;
+          }
+        } catch(e) {}
+      })();
+    </script>
+    <script>
+      (function(){
+        try {
+          if (typeof htmx !== 'undefined') {
+            htmx.config.ignoreTitle = true;
+            htmx.on('htmx:afterSwap', function(){
+              try {
+                var baseTitle = '{{ app_name }} - {{ app_instansi }}';
+                var h = document.querySelector('.page-title');
+                var t = h ? (h.textContent || '').trim() : '';
+                document.title = t ? baseTitle + ' | ' + t : baseTitle;
+              } catch(e) {}
+            });
           }
         } catch(e) {}
       })();

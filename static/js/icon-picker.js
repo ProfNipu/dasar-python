@@ -1,12 +1,6 @@
 (function(){
   'use strict';
 
-  // Lightweight reusable Icon Picker
-  // Usage:
-  // 1) Include once in base layout: <script src="/static/js/icon-picker.js"></script>
-  // 2) Add a button with data-icon-picker="#inputId"
-  // 3) Optional: window.IconPicker.open({ input: document.querySelector('#inputId'), initial: 'fas fa-folder', onSelect: fn })
-
   var DEFAULT_ICONS = [
     'fas fa-0','fas fa-1','fas fa-2','fas fa-3','fas fa-4','fas fa-5','fas fa-6','fas fa-7','fas fa-8','fas fa-9',
     'fas fa-folder','fas fa-folder-open','fas fa-home','fas fa-tachometer-alt','fas fa-users','fas fa-user','fas fa-user-friends','fas fa-id-card','fas fa-address-book','fas fa-briefcase','fas fa-building','fas fa-cog','fas fa-cogs','fas fa-tools','fas fa-wrench','fas fa-database','fas fa-server','fas fa-cloud','fas fa-upload','fas fa-download','fas fa-file','fas fa-file-alt','fas fa-file-excel','fas fa-file-pdf','fas fa-book','fas fa-book-open','fas fa-chart-bar','fas fa-chart-line','fas fa-chart-pie','fas fa-table','fas fa-list','fas fa-list-alt','fas fa-calendar','fas fa-clock','fas fa-history','fas fa-bell','fas fa-envelope','fas fa-inbox','fas fa-paper-plane','fas fa-search','fas fa-filter','fas fa-check','fas fa-times','fas fa-plus','fas fa-minus','fas fa-edit','fas fa-trash','fas fa-sync','fas fa-sync-alt','fas fa-spinner','fas fa-lock','fas fa-unlock','fas fa-key','fas fa-shield-alt','fas fa-link','fas fa-external-link-alt','fas fa-map','fas fa-map-marker-alt','fas fa-phone','fas fa-comment','fas fa-comments','fas fa-info-circle','fas fa-question-circle','fas fa-exclamation-triangle','fas fa-bug','fas fa-code','fas fa-terminal','fas fa-globe','fas fa-star','far fa-star','far fa-file','far fa-file-alt','far fa-envelope','far fa-bell','fab fa-github','fab fa-gitlab','fab fa-docker','fab fa-aws','fab fa-linux','fab fa-windows','fab fa-apple','fab fa-android','fab fa-python','fab fa-laravel','fab fa-node','fab fa-react','fab fa-bootstrap'
@@ -31,11 +25,8 @@
   var lucideKebabSet = null;
   function toKebab(s){
     var str = String(s||'');
-    // Handle ABCd -> AB-Cd before the common a-z0-9 to Uppercase split
     str = str.replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2');
-    // Handle aZ -> a-Z
     str = str.replace(/([a-z0-9])([A-Z])/g,'$1-$2');
-    // Underscore to hyphen
     str = str.replace(/_/g,'-');
     return str.toLowerCase();
   }
@@ -97,12 +88,10 @@
     } catch(e){}
   }
 
-  // Prevent layout shift when locking scroll by compensating scrollbar width
   function lockPageScroll(){
     try {
       var doc = document.documentElement;
       var sbw = Math.max(0, window.innerWidth - doc.clientWidth);
-      // Lock scroll via style to work regardless of utility classes
       doc.style.overflowY = 'hidden';
       document.body.style.overflow = 'hidden';
       if (sbw){
@@ -130,7 +119,6 @@
         .then(function(json){
           if (json){
             faMeta = json;
-            // Build FA lists based on styles
             var set = new Set();
             var faList = [];
             Object.keys(json).forEach(function(name){
@@ -141,13 +129,11 @@
                 else if (st === 'brands') faList.push('fab fa-' + name);
               });
             });
-            // Add numeric glyph icons 0-9 so they appear in the picker as well
             try {
               ['0','1','2','3','4','5','6','7','8','9'].forEach(function(d){
                 faList.push('fas fa-' + d);
               });
             } catch(e){}
-            // Rebuild state.icons with FA + existing (Lucide entries already present)
             state.icons = faList.concat(state.icons.filter(function(x){ return String(x).indexOf('lucide:')===0; }));
           }
           if (done) done();
@@ -205,7 +191,6 @@
       wrap.innerHTML = tpl();
       document.body.appendChild(wrap.firstElementChild);
     }
-    // Fallback binding for category tabs within the modal container (runs once)
     var modal = document.getElementById('iconPickerModal');
     var cats = modal ? modal.querySelector('#ipCats') : null;
     if (cats && !cats.dataset.bound){
@@ -226,12 +211,12 @@
   }
 
   function getRecent(){
-    try { return JSON.parse(localStorage.getItem('aplikasi_test_icon_recent') || '[]'); } catch(e){ return []; }
+    try { return JSON.parse(localStorage.getItem('esimpeg_icon_recent') || '[]'); } catch(e){ return []; }
   }
   function saveRecent(cls){
     var arr = getRecent().filter(function(x){return x!==cls;});
     arr.unshift(cls);
-    localStorage.setItem('aplikasi_test_icon_recent', JSON.stringify(arr.slice(0,5)));
+    localStorage.setItem('esimpeg_icon_recent', JSON.stringify(arr.slice(0,5)));
   }
 
   function filtered(){
@@ -306,7 +291,6 @@
       btn.addEventListener('click', function(){ selectIcon(cls); });
       grid.appendChild(btn);
     });
-    // Render lucide icons inside the grid
     try { if (window.lucide && lucide.createIcons) { lucide.createIcons({ nameAttr: 'data-lucide' }); } } catch(e){}
     if (typeof focusIdx === 'number' && focusIdx >= 0) setFocus(focusIdx); else state.focusIndex=-1;
   }
@@ -326,7 +310,7 @@
       if (cls.indexOf('lucide:')===0){
         if (lucideKebabSet){
           var n0 = lucideAlias(toKebab(cls.split(':')[1]||''));
-          if (!lucideKebabSet.has(n0)) return; // skip missing icons
+          if (!lucideKebabSet.has(n0)) return;
         }
         var name = lucideAlias(toKebab(cls.split(':')[1]));
         btn.innerHTML='<div class="flex items-center gap-3">' +
@@ -365,7 +349,6 @@
     state.onSelect = typeof opts.onSelect === 'function' ? opts.onSelect : null;
 
     var modal = ensureModal();
-    // Prepare animation states before showing
     var overlay = modal.querySelector('#ipOverlay');
     var panel = modal.querySelector('#ipPanel');
     try {
@@ -373,7 +356,6 @@
       if (panel){ panel.style.opacity = '0'; panel.style.transform = 'translateY(4px)'; panel.style.transition = 'transform 90ms ease-out, opacity 90ms ease-out'; }
     } catch(e){}
     modal.classList.remove('hidden');
-    // Kick off animate-in immediately for perceived responsiveness
     try {
       requestAnimationFrame(function(){
         if (overlay) overlay.style.opacity = '1';
@@ -381,7 +363,6 @@
       });
     } catch(e){}
 
-    // Always start on 'all' to reduce confusion; still highlight currently selected icon later
     var selected = state.targetInput ? (state.targetInput.value || '').trim() : '';
     function baseIcon(cls){
       if (!cls) return '';
@@ -400,7 +381,6 @@
     state.userClickedCategory = false;
     activateCategory('all');
     var doRender = function(){
-      // Start with an empty query for a clean view
       state.query = '';
       state.current = filtered();
       var idx = -1;
@@ -416,11 +396,8 @@
       renderRecent(getRecent());
       var search = document.getElementById('ipSearch');
       if (search){ search.value = ''; requestAnimationFrame(function(){ search.focus(); }); }
-      // Enforce highlight on 'Semua' tab after async loads
       activateCategory('all');
-      // (animation already started before render for snappier feel)
     };
-    // Ensure catalogs then render (defer heavy DOM to next frames to avoid initial delay)
     var schedule = function(){
       try {
         requestAnimationFrame(function(){ requestAnimationFrame(doRender); });
@@ -439,7 +416,6 @@
     if (!modal) return;
     var overlay = modal.querySelector('#ipOverlay');
     var panel = modal.querySelector('#ipPanel');
-    // Animate out
     try {
       if (overlay) overlay.style.opacity = '0';
       if (panel){ panel.style.opacity = '0'; panel.style.transform = 'translateY(4px)'; }
@@ -467,7 +443,6 @@
       var modal = document.getElementById('iconPickerModal');
       var isOpen = modal && !modal.classList.contains('hidden');
 
-      // open trigger
       var tgt = e.target;
       if (tgt && tgt.nodeType !== 1) { tgt = tgt.parentElement; }
       var trigger = tgt && tgt.closest && tgt.closest('[data-icon-picker]');
@@ -475,7 +450,6 @@
         var sel = trigger.getAttribute('data-icon-picker');
         var input = sel ? document.querySelector(sel) : null;
         open({ input: input });
-        // enforce 'Semua' after open to avoid any late mutation
         setTimeout(function(){ activateCategory('all'); }, 0);
         e.preventDefault();
         return;
@@ -483,12 +457,10 @@
 
       if (!isOpen) return;
 
-      // close button
       var isCloseBtn = tgt && tgt.closest && tgt.closest('#ipClose');
       var isOverlay = e.target && e.target.dataset && e.target.dataset.close === '1';
       if (isCloseBtn || isOverlay){ e.preventDefault(); close(); return; }
 
-      // category buttons
       var catBtn = tgt && tgt.closest && tgt.closest('#ipCats button[data-cat]');
       if (catBtn){
         state.userClickedCategory = true;
@@ -501,7 +473,6 @@
         return;
       }
 
-      // clear search
       if ((tgt && tgt.id === 'ipClear') || (tgt && tgt.closest && tgt.closest('#ipClear'))){
         var search = document.getElementById('ipSearch');
         if (search){ search.value=''; state.query=''; state.current=filtered(); renderIcons(state.current); search.focus(); }
@@ -536,8 +507,7 @@
       if (raw.indexOf('lucide:') === 0){
         name = raw.split(':')[1] || '';
       } else {
-        // Accept forms like 'lucidealign-...', 'lucide-align-...', 'Lucide:Name', etc.
-        var rest = raw.slice(6); // remove 'lucide'
+        var rest = raw.slice(6);
         if (rest && (rest[0] === ':' || rest[0] === '-')) rest = rest.slice(1);
         name = rest || '';
       }
@@ -546,7 +516,6 @@
       try {
         if (window.lucide && lucide.createIcons) {
           lucide.createIcons({ nameAttr: 'data-lucide' });
-          // Scale SVG to 1em to match FA sizing in preview containers
           var svg = el.querySelector('svg');
           if (svg){ svg.style.width = '1em'; svg.style.height = '1em'; }
           try { setTimeout(function(){ var s = el.querySelector('svg'); if (s){ s.style.width='1em'; s.style.height='1em'; } }, 0); } catch(e){}
@@ -557,10 +526,8 @@
     }
   }
   function updateIconPreview(iconClass){
-    // Update default preview if present
     var preview = document.getElementById('iconPreview');
     if (preview) renderPreviewInto(preview, iconClass);
-    // Also update per-field preview tied to the active input (if any)
     try {
       if (state && state.targetInput && state.targetInput.id){
         var local = document.getElementById(state.targetInput.id + '_preview');
@@ -569,7 +536,6 @@
     } catch(e){}
   }
 
-  // Public API
   window.IconPicker = {
     open: open,
     setIcons: function(list){ if (Array.isArray(list)) { state.icons = list.slice(); } },
@@ -579,7 +545,6 @@
     try { var el = document.getElementById(String(inputId) + '_preview'); renderPreviewInto(el, iconClass); } catch(e){}
   };
 
-  // Init once
   if (document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', delegate);
   } else {

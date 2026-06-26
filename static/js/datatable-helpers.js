@@ -1,5 +1,5 @@
 /**
- * Datatable Helpers - Reusable Datatable Components
+ * ESIMPEG Datatable Helpers - Reusable Datatable Components
  * Version: 1.0
  * 
  * Usage:
@@ -15,7 +15,6 @@
 
 class DatatableHelper {
     constructor(config) {
-        // Configuration
         this.config = {
             tableId: config.tableId || 'datatable',
             pageKey: config.pageKey || 'default',
@@ -24,20 +23,17 @@ class DatatableHelper {
             csrfToken: config.csrfToken || this.getCSRFToken(),
             exportFormats: config.exportFormats || ['csv', 'excel', 'pdf'],
             entity: (config.entity || 'users'),
-            useToast: config.useToast !== undefined ? config.useToast : true, // Use toast for success messages
+            useToast: config.useToast !== undefined ? config.useToast : true,
             debug: config.debug || false,
             ajaxDelete: config.ajaxDelete !== undefined ? !!config.ajaxDelete : true,
             noNavigateFallback: config.noNavigateFallback !== undefined ? !!config.noNavigateFallback : false,
             preloaderMinMs: (config.preloaderMinMs !== undefined ? config.preloaderMinMs : 250),
-            
-            // Timing configuration (in seconds per record)
             timing: {
-                bulkExport: config.timing?.bulkExport || 0.1,     // 100ms per record for bulk export
-                estimateMultiplier: config.timing?.estimateMultiplier || 1000 // Convert to milliseconds
+                bulkExport: config.timing?.bulkExport || 0.1,
+                estimateMultiplier: config.timing?.estimateMultiplier || 1000
             }
         };
         
-        // State
         this.currentSelections = [];
         this.allPagesDataCache = {};
         this.isInitialized = false;
@@ -50,7 +46,6 @@ class DatatableHelper {
         this.log('DatatableHelper initialized', this.config);
     }
 
-    // Ensure delete links do not trigger global page loader (SweetAlert confirm should appear)
     markNoLoaderOnDeleteLinks() {
         try {
             this.resolveContainer();
@@ -64,9 +59,6 @@ class DatatableHelper {
         } catch (e) {}
     }
     
-    /**
-     * Resolve and cache container/table elements for this instance
-     */
     resolveContainer() {
         let table = null;
         if (this.config.tableId) {
@@ -99,9 +91,6 @@ class DatatableHelper {
         return container;
     }
     
-    /**
-     * Get CSRF Token automatically
-     */
     getCSRFToken() {
         const input = document.querySelector('[name=csrfmiddlewaretoken]');
         if (input && input.value) return input.value;
@@ -111,9 +100,6 @@ class DatatableHelper {
         return cookie || '';
     }
 
-    /**
-     * Read cookie by name
-     */
     getCookie(name) {
         const cookies = document.cookie ? document.cookie.split('; ') : [];
         for (let i = 0; i < cookies.length; i++) {
@@ -127,15 +113,10 @@ class DatatableHelper {
         return '';
     }
     
-    /**
-     * Show notification (Toast or SweetAlert based on config)
-     */
     showNotification(message, type = 'success') {
         if (this.config.useToast && typeof showToast === 'function') {
-            // Use toast from app.js
             showToast(message, type);
         } else {
-            // Fallback to SweetAlert
             const icons = {
                 'success': 'success',
                 'error': 'error',
@@ -151,7 +132,6 @@ class DatatableHelper {
         }
     }
     
-    // Centralized failure handler to avoid unwanted navigation
     handleDeleteFailure(ids){
         const msg = 'Gagal menghapus data via AJAX';
         try {
@@ -160,13 +140,9 @@ class DatatableHelper {
                 return;
             }
         } catch(e){}
-        // Default fallback: submit form (may reload page)
         this.submitDeleteForm(ids || []);
     }
     
-    /**
-     * Start preloader on table with minimum visible duration
-     */
     startPreloader(){
         const target = document.getElementById('table-content');
         const startedAt = Date.now();
@@ -186,18 +162,12 @@ class DatatableHelper {
         };
     }
     
-    /**
-     * Debug logging
-     */
     log(...args) {
         if (this.config.debug) {
             console.log('[DatatableHelper]', ...args);
         }
     }
     
-    /**
-     * Initialize datatable
-     */
     init() {
         if (this.isInitialized) {
             this.log('Already initialized, skipping');
@@ -205,40 +175,24 @@ class DatatableHelper {
         }
         
         this.log('Initializing...');
-        // Resolve container/table
         this.resolveContainer();
-        
-        // Init checkboxes
         this.initCheckboxes();
-        
-        // Cache current page data
         this.cacheCurrentPageData();
-
-        // Avoid global loader overriding delete confirmations
         this.markNoLoaderOnDeleteLinks();
-        
-        // Ensure pagination anchors use HTMX for partial reloads
         this.decoratePaginationLinks();
         
-        // Setup HTMX listeners (only once per instance)
         if (!this.htmxAttached) {
             this.setupHtmxListeners();
             this.htmxAttached = true;
         }
         
-        // Setup event delegation for bulk actions (scoped)
         this.setupBulkActionHandlers();
-        
-        // Setup row-level delete (scoped)
         this.setupRowDeleteHandlers();
         
         this.isInitialized = true;
         this.log('Initialization complete');
     }
     
-    /**
-     * Initialize checkboxes with persistence
-     */
     initCheckboxes() {
         if (this.initCheckboxesRunning) {
             this.log('initCheckboxes already running, skipping');
@@ -249,30 +203,21 @@ class DatatableHelper {
         this.log('Initializing checkboxes');
         this.resolveContainer();
         
-        // Load selections from server
         this.loadSelectionsFromDB()
             .then(selectedIds => {
                 this.currentSelections = selectedIds;
                 
-                // Update checkbox states
                 const root = this.container || document;
                 const checkboxes = root.querySelectorAll('.row-checkbox');
                 checkboxes.forEach(checkbox => {
                     const shouldBeChecked = selectedIds.includes(checkbox.value);
-                    
-                    // Clone to remove old listeners
                     const newCheckbox = checkbox.cloneNode(true);
                     newCheckbox.checked = shouldBeChecked;
                     checkbox.parentNode.replaceChild(newCheckbox, checkbox);
-                    
-                    // Add new listener
                     newCheckbox.addEventListener('change', () => this.updateBulkActions());
                 });
                 
-                // Setup select-all checkboxes
                 this.setupSelectAllCheckboxes();
-                
-                // Update UI
                 this.updateBulkActions();
                 
                 this.initCheckboxesRunning = false;
@@ -280,13 +225,11 @@ class DatatableHelper {
             })
             .catch(err => {
                 console.error('Failed to load selections:', err);
-                // Fallback: attach listeners without DB
                 try {
                     const root = (this.container || document);
                     let checkboxes = root.querySelectorAll('.row-checkbox');
                     if (!checkboxes.length) checkboxes = root.querySelectorAll('tbody input[type="checkbox"]');
                     checkboxes.forEach(checkbox => {
-                        // Ensure clean listener
                         const clone = checkbox.cloneNode(true);
                         clone.checked = !!checkbox.checked;
                         checkbox.parentNode.replaceChild(clone, checkbox);
@@ -299,9 +242,6 @@ class DatatableHelper {
             });
     }
     
-    /**
-     * Setup select-all checkboxes
-     */
     setupSelectAllCheckboxes() {
         const root = this.container || document;
         const selectAllTop = root.querySelector('#select-all-top');
@@ -320,14 +260,10 @@ class DatatableHelper {
         }
     }
     
-    /**
-     * Handle select-all checkbox
-     */
     handleSelectAll(checked) {
         const checkboxes = (this.container || document).querySelectorAll('.row-checkbox');
         checkboxes.forEach(cb => cb.checked = checked);
         
-        // Sync both select-all checkboxes
         const root = this.container || document;
         const selectAllTop = root.querySelector('#select-all-top');
         const selectAllBottom = root.querySelector('#select-all-bottom');
@@ -337,9 +273,6 @@ class DatatableHelper {
         this.updateBulkActions();
     }
     
-    /**
-     * Update bulk actions bar
-     */
     updateBulkActions() {
         const root = this.container || document;
         let checkboxes = root.querySelectorAll('.row-checkbox');
@@ -348,7 +281,6 @@ class DatatableHelper {
         }
         const checkedBoxes = Array.from(checkboxes).filter(cb => cb.checked);
         
-        // Update master select-all checkboxes based on current page selection
         const total = checkboxes.length;
         const selected = checkedBoxes.length;
         const selectAllTop = root.querySelector('#select-all-top');
@@ -363,32 +295,27 @@ class DatatableHelper {
                 el.indeterminate = false;
             } else {
                 el.checked = false;
-                el.indeterminate = true; // partially selected
+                el.indeterminate = true;
             }
         };
         setMaster(selectAllTop);
         setMaster(selectAllBottom);
         
-        // Get all selected IDs across pages (normalize to strings)
         const currentPageIds = checkedBoxes.map(cb => String(cb.value));
         const storedIds = (this.getStoredSelections() || []).map(v => String(v));
         
-        // Merge: remove unchecked from current page, add checked
         const otherPageIds = storedIds.filter(id => 
             !Array.from(checkboxes).some(cb => String(cb.value) === id)
         );
         const allSelectedIds = [...new Set([...otherPageIds, ...currentPageIds])];
         
-        // Save to database
         this.saveSelectionsToDB(allSelectedIds);
         
-        // Update count display
         const countSpan = root.querySelector('#selected-count') || document.getElementById('selected-count');
         if (countSpan) {
             countSpan.textContent = allSelectedIds.length;
         }
         
-        // Show/hide bulk actions bar (support bar outside container)
         const bulkActionsBar = root.querySelector('#bulk-actions-bar') || document.getElementById('bulk-actions-bar');
         if (bulkActionsBar) {
             if (allSelectedIds.length > 0) {
@@ -403,16 +330,10 @@ class DatatableHelper {
         this.log('Updated bulk actions, selected:', allSelectedIds.length);
     }
     
-    /**
-     * Get stored selections
-     */
     getStoredSelections() {
         return this.currentSelections;
     }
     
-    /**
-     * Load selections from database
-     */
     loadSelectionsFromDB() {
         return fetch(this.config.saveUrl, {
             method: 'POST',
@@ -434,7 +355,6 @@ class DatatableHelper {
             }
             const ct = response.headers.get('Content-Type') || '';
             if (!ct.includes('application/json')) {
-                // Graceful fallback when server returns HTML
                 return { success: false, selected_ids: [] };
             }
             return response.json();
@@ -449,9 +369,6 @@ class DatatableHelper {
         });
     }
     
-    /**
-     * Save selections to database
-     */
     saveSelectionsToDB(ids) {
         const normalized = (ids || []).map(v => String(v));
         this.currentSelections = normalized;
@@ -485,9 +402,6 @@ class DatatableHelper {
         .catch(err => console.error('Save selections error:', err));
     }
     
-    /**
-     * Cache current page data for copy/print
-     */
     cacheCurrentPageData() {
         const rows = document.querySelectorAll('tbody tr');
         rows.forEach(row => {
@@ -521,7 +435,6 @@ class DatatableHelper {
                     rules: cells[6]?.textContent.trim() || ''
                 };
             } else if (this.config.entity === 'api_documentation') {
-                // API docs columns: [0]=selection, [1]=row_number, [2]=id, [3]=method, [4]=url, [5]=description, [6]=active, [7]=actions
                 rowData = {
                     id: userId,
                     method_type: cells[3]?.textContent.trim() || '',
@@ -536,7 +449,6 @@ class DatatableHelper {
                     rules: cells[6]?.textContent.trim() || ''
                 };
             } else {
-                // Users table columns: [0]=selection, [1]=row_number, [2]=username, [3]=email, [4]=name, [5]=roles(group_count), [6]=status, [7]=actions
                 rowData = {
                     id: userId,
                     username: cells[2]?.textContent.trim() || '',
@@ -553,9 +465,6 @@ class DatatableHelper {
         this.log('Cached data for', Object.keys(this.allPagesDataCache).length, this.config.entity);
     }
     
-    /**
-     * Setup HTMX listeners
-     */
     setupHtmxListeners() {
         this.log('Setting up HTMX listeners');
         
@@ -572,15 +481,11 @@ class DatatableHelper {
         });
     }
 
-    /**
-     * Convert pagination anchors to HTMX requests to avoid full page reload
-     */
     decoratePaginationLinks() {
         try {
             const root = this.container || document;
             const links = root.querySelectorAll('.pagination a, a[href*="page="]');
             links.forEach(link => {
-                // Skip if already decorated
                 if (link.hasAttribute('hx-get')) return;
                 const href = link.getAttribute('href');
                 if (!href) return;
@@ -597,9 +502,6 @@ class DatatableHelper {
         }
     }
     
-    /**
-     * Setup bulk action handlers
-     */
     setupBulkActionHandlers() {
         this.log('Setting up bulk action handlers');
         if (this.bulkActionsAttached) { this.log('Bulk action handlers already attached, skipping'); return; }
@@ -615,12 +517,10 @@ class DatatableHelper {
             const action = target.dataset.action;
             this.log('Bulk action clicked:', action);
             
-            // Disable button briefly
             if (target.disabled) return;
             target.disabled = true;
             setTimeout(() => target.disabled = false, 1000);
             
-            // Execute action
             switch(action) {
                 case 'clear':
                     this.clearAllSelections();
@@ -650,10 +550,6 @@ class DatatableHelper {
         this.bulkActionsAttached = true;
     }
     
-    /**
-     * Setup single row delete via event delegation
-     * Button/link should have: [data-row-delete] and optionally data-id, data-url
-     */
     setupRowDeleteHandlers(){
         this.log('Setting up row delete handlers');
         if (this.rowDeleteAttached) { this.log('Row delete handlers already attached, skipping'); return; }
@@ -740,7 +636,6 @@ class DatatableHelper {
         this.rowDeleteAttached = true;
     }
     
-    // Remove row from DOM and update selection state
     deleteRowDom(tr, id){
         try {
             if (tr && tr.parentNode) tr.parentNode.removeChild(tr);
@@ -751,7 +646,6 @@ class DatatableHelper {
 
     refreshTableAfterDelete(count){
         try {
-            // If current page turns empty after deletion, go to previous page
             let urlObj = new URL(window.location.href);
             const pageParam = parseInt(urlObj.searchParams.get('page') || '1', 10);
             try {
@@ -769,7 +663,6 @@ class DatatableHelper {
         } catch(e){}
     }
     
-    // AJAX delete single id (returns {ok, names?})
     ajaxDeleteSingle(id, endpoint){
         const url = endpoint || this.config.deleteUrl;
         const headers = {
@@ -806,7 +699,6 @@ class DatatableHelper {
         }).catch(() => ({ ok: false }));
     }
     
-    // AJAX bulk delete (returns {ok, names?})
     ajaxBulkDelete(ids){
         const headers = {
             'Accept': 'application/json, text/plain, */*',
@@ -841,9 +733,6 @@ class DatatableHelper {
         }).catch(() => ({ ok: false }));
     }
     
-    /**
-     * Clear all selections
-     */
     clearAllSelections() {
         const count = this.currentSelections.length;
         
@@ -864,9 +753,6 @@ class DatatableHelper {
         }
     }
     
-    /**
-     * Copy selected to clipboard
-     */
     copyToClipboard() {
         const ids = this.getStoredSelections();
         if (ids.length === 0) {
@@ -916,9 +802,6 @@ class DatatableHelper {
         });
     }
     
-    /**
-     * Print selected
-     */
     printSelected() {
         const ids = this.getStoredSelections();
         if (ids.length === 0) {
@@ -1081,9 +964,6 @@ class DatatableHelper {
         setTimeout(() => w.print(), 300);
     }
     
-    /**
-     * Export selected
-     */
     exportSelected(format) {
         const ids = this.getStoredSelections();
         if (ids.length === 0) {
@@ -1096,11 +976,9 @@ class DatatableHelper {
             return;
         }
         
-        // Calculate dynamic timing based on selection count
         const loadingTime = ids.length * this.config.timing.bulkExport * this.config.timing.estimateMultiplier;
         const loadingSeconds = (loadingTime / 1000).toFixed(1);
         
-        // Show loading with estimate
         Swal.fire({
             title: `Memproses Export ${format.toUpperCase()}`,
             html: `
@@ -1114,7 +992,6 @@ class DatatableHelper {
             didOpen: () => Swal.showLoading()
         });
         
-        // Create form and submit (open in new tab to avoid navigating away)
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = this.config.deleteUrl;
@@ -1139,10 +1016,9 @@ class DatatableHelper {
         const actionInput = document.createElement('input');
         actionInput.type = 'hidden';
         actionInput.name = 'action';
-        actionInput.value = 'export_' + format; // Match backend expectation
+        actionInput.value = 'export_' + format;
         form.appendChild(actionInput);
         
-        // Pass current filters (if present)
         try {
             const search = document.getElementById('search-input')?.value || '';
             const moduleSel = document.getElementById('module')?.value || '';
@@ -1166,7 +1042,7 @@ class DatatableHelper {
         form.submit();
         
         setTimeout(() => {
-            Swal.close(); // Close loading
+            Swal.close();
             Swal.fire({
                 icon: 'success',
                 title: 'Berhasil!',
@@ -1177,12 +1053,8 @@ class DatatableHelper {
         }, loadingTime);
     }
     
-    /**
-     * Delete selected. Optionally accept explicit ids from caller.
-     */
     deleteSelected(idsOverride) {
         let ids = Array.isArray(idsOverride) && idsOverride.length ? idsOverride : this.getStoredSelections();
-        // Fallback: if persistence not yet synced, read from DOM checkboxes
         if (!ids || ids.length === 0) {
             ids = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => cb.value);
         }
@@ -1219,7 +1091,6 @@ class DatatableHelper {
                             if (cb && idSet.has(String(cb.value))) this.deleteRowDom(tr, cb.value);
                         });
                         if (res.names && res.names.length) {
-                            // If backend only sends subset, hint remaining count
                             const remaining = Math.max(0, ids.length - res.names.length);
                             const suffix = remaining > 0 ? ` (+${remaining} lainnya)` : '';
                             this.showNotification(`✓ Terhapus: ${res.names.join(', ')}${suffix}`, 'success');
@@ -1236,7 +1107,6 @@ class DatatableHelper {
         });
     }
 
-    // Fallback old behavior using form POST
     submitDeleteForm(ids){
         const form = document.createElement('form');
         form.method = 'POST';
@@ -1263,7 +1133,6 @@ class DatatableHelper {
     }
 }
 
-// Export for use
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = DatatableHelper;
 }

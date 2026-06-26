@@ -1,5 +1,5 @@
 /**
- * 🚀 REUSABLE DATATABLE SYSTEM
+ * ESIMPEG REUSABLE DATATABLE SYSTEM
  * Version: 2.0 - Complete Reusable Solution
  * 
  * Usage:
@@ -14,31 +14,23 @@
 
 class DatatableReusable {
     constructor(config) {
-        // Configuration with intelligent defaults
         this.config = {
-            entityName: config.entityName || 'items',           // roles, users, functions
-            pageKey: config.pageKey || 'default_list',          // role_list, user_list
-            exportUrl: config.exportUrl || window.location.href, // Export endpoint URL
-            csrfToken: config.csrfToken || this.getCSRFToken(), // Auto-detect CSRF
-            debug: config.debug || false,                       // Debug logging
-            
-            // Features flags
+            entityName: config.entityName || 'items',
+            pageKey: config.pageKey || 'default_list',
+            exportUrl: config.exportUrl || window.location.href,
+            csrfToken: config.csrfToken || this.getCSRFToken(),
+            debug: config.debug || false,
             enableBulkActions: config.enableBulkActions !== false,
             enableSelection: config.enableSelection !== false,
             enableExport: config.enableExport !== false,
-            
-            // Export formats
             exportFormats: config.exportFormats || ['csv', 'excel', 'pdf'],
-            
-            // Timing configuration (in seconds)
             timing: {
-                bulkExport: config.timing?.bulkExport || 0.1,     // 100ms per record
-                excelExport: config.timing?.excelExport || 0.000175, // 0.175ms per record
-                pdfExport: config.timing?.pdfExport || 0.00115      // 1.15ms per record
+                bulkExport: config.timing?.bulkExport || 0.1,
+                excelExport: config.timing?.excelExport || 0.000175,
+                pdfExport: config.timing?.pdfExport || 0.00115
             }
         };
         
-        // State management
         this.state = {
             currentSelections: [],
             allPagesDataCache: {},
@@ -46,7 +38,6 @@ class DatatableReusable {
             initCheckboxesRunning: false
         };
         
-        // Bind methods to preserve context
         this.updateBulkActions = this.updateBulkActions.bind(this);
         this.exportSelected = this.exportSelected.bind(this);
         this.deleteSelected = this.deleteSelected.bind(this);
@@ -54,27 +45,18 @@ class DatatableReusable {
         this.log('DatatableReusable initialized', this.config);
     }
     
-    /**
-     * 🔍 Get CSRF Token automatically
-     */
     getCSRFToken() {
         const token = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
                      document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || '';
         return token;
     }
     
-    /**
-     * 📝 Debug logging
-     */
     log(...args) {
         if (this.config.debug) {
             console.log(`[DatatableReusable:${this.config.entityName}]`, ...args);
         }
     }
     
-    /**
-     * ⚡ Initialize the datatable system
-     */
     init() {
         if (this.state.isInitialized) {
             this.log('Already initialized, skipping');
@@ -82,30 +64,20 @@ class DatatableReusable {
         }
         
         this.log('Initializing...');
-        
-        // Setup global functions
         this.setupGlobalFunctions();
         
-        // Init selection system
         if (this.config.enableSelection) {
             this.initSelectionSystem();
         }
         
-        // Setup HTMX listeners
         this.setupHtmxListeners();
-        
-        // Setup event handlers
         this.setupEventHandlers();
         
         this.state.isInitialized = true;
         this.log('Initialization complete');
     }
     
-    /**
-     * 🌐 Setup global functions for template access
-     */
     setupGlobalFunctions() {
-        // Clear search function
         window.clearSearch = () => {
             const searchInput = document.getElementById('search-input');
             if (searchInput) {
@@ -114,7 +86,6 @@ class DatatableReusable {
             }
         };
         
-        // Export functions
         window.exportSelected = this.exportSelected;
         window.deleteSelected = this.deleteSelected;
         window.clearAllSelections = () => this.clearAllSelections();
@@ -122,13 +93,9 @@ class DatatableReusable {
         window.printSelected = () => this.printSelected();
     }
     
-    /**
-     * ✅ Initialize selection system
-     */
     initSelectionSystem() {
         this.log('Initializing selection system...');
         
-        // Load selections from database
         this.loadSelectionsFromDB().then(selectedIds => {
             this.state.currentSelections = selectedIds || [];
             this.setupCheckboxListeners();
@@ -137,9 +104,6 @@ class DatatableReusable {
         });
     }
     
-    /**
-     * 💾 Load selections from database
-     */
     async loadSelectionsFromDB() {
         try {
             const response = await fetch(this.config.exportUrl, {
@@ -163,9 +127,6 @@ class DatatableReusable {
         }
     }
     
-    /**
-     * 💾 Save selections to database
-     */
     async saveSelectionsToDB(ids) {
         try {
             const response = await fetch(this.config.exportUrl, {
@@ -189,17 +150,12 @@ class DatatableReusable {
         }
     }
     
-    /**
-     * 🔲 Setup checkbox listeners
-     */
     setupCheckboxListeners() {
-        // Individual checkboxes
         document.querySelectorAll('.row-checkbox').forEach(checkbox => {
             checkbox.checked = this.state.currentSelections.includes(checkbox.value);
             checkbox.addEventListener('change', this.updateBulkActions);
         });
         
-        // Select all checkboxes
         const selectAllTop = document.getElementById('select-all-top');
         const selectAllBottom = document.getElementById('select-all-bottom');
         
@@ -228,16 +184,12 @@ class DatatableReusable {
         }
     }
     
-    /**
-     * 🔄 Update bulk actions visibility and count
-     */
     updateBulkActions() {
         const allBoxes = document.querySelectorAll('.row-checkbox');
         const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
         const bulkActionsBar = document.getElementById('bulk-actions-bar');
         const selectedCountSpan = document.getElementById('selected-count');
         
-        // Update stored selections
         const currentPageIds = Array.from(allBoxes).map(cb => cb.value);
         const filteredIds = this.state.currentSelections.filter(id => !currentPageIds.includes(id));
         
@@ -247,7 +199,6 @@ class DatatableReusable {
             }
         });
         
-        // Sync master select-all (top & bottom)
         const total = allBoxes.length;
         const selected = checkedBoxes.length;
         const selectAllTop = document.getElementById('select-all-top');
@@ -271,7 +222,6 @@ class DatatableReusable {
         this.state.currentSelections = filteredIds;
         this.saveSelectionsToDB(filteredIds);
         
-        // Update UI
         const totalCount = filteredIds.length;
         if (selectedCountSpan) selectedCountSpan.textContent = totalCount;
         
@@ -286,9 +236,6 @@ class DatatableReusable {
         this.log('Updated selections:', totalCount, 'items');
     }
     
-    /**
-     * 📤 Export selected items
-     */
     exportSelected(format) {
         const ids = this.state.currentSelections;
         this.log('Export', format, 'for', ids.length, 'items');
@@ -303,26 +250,22 @@ class DatatableReusable {
             return;
         }
         
-        // Create form
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = this.config.exportUrl;
         
-        // CSRF token
         const csrfInput = document.createElement('input');
         csrfInput.type = 'hidden';
         csrfInput.name = 'csrfmiddlewaretoken';
         csrfInput.value = this.config.csrfToken;
         form.appendChild(csrfInput);
         
-        // Action
         const actionInput = document.createElement('input');
         actionInput.type = 'hidden';
         actionInput.name = 'action';
         actionInput.value = 'export_' + format;
         form.appendChild(actionInput);
         
-        // Selected IDs
         ids.forEach(id => {
             const idInput = document.createElement('input');
             idInput.type = 'hidden';
@@ -331,7 +274,6 @@ class DatatableReusable {
             form.appendChild(idInput);
         });
         
-        // Show loading
         const loadingTime = ids.length * this.config.timing.bulkExport * 1000;
         const loadingSeconds = (loadingTime / 1000).toFixed(1);
         
@@ -348,11 +290,9 @@ class DatatableReusable {
             didOpen: () => Swal.showLoading()
         });
         
-        // Submit form
         document.body.appendChild(form);
         form.submit();
         
-        // Show success message
         setTimeout(() => {
             Swal.close();
             Swal.fire({
@@ -366,9 +306,6 @@ class DatatableReusable {
         }, loadingTime);
     }
     
-    /**
-     * 🗑️ Delete selected items
-     */
     deleteSelected() {
         const ids = this.state.currentSelections;
         this.log('Delete requested for', ids.length, 'items');
@@ -399,29 +336,23 @@ class DatatableReusable {
         });
     }
     
-    /**
-     * 🗑️ Perform actual deletion
-     */
     performDelete(ids) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = this.config.exportUrl;
         
-        // CSRF token
         const csrfInput = document.createElement('input');
         csrfInput.type = 'hidden';
         csrfInput.name = 'csrfmiddlewaretoken';
         csrfInput.value = this.config.csrfToken;
         form.appendChild(csrfInput);
         
-        // Action
         const actionInput = document.createElement('input');
         actionInput.type = 'hidden';
         actionInput.name = 'action';
         actionInput.value = 'bulk_delete';
         form.appendChild(actionInput);
         
-        // Selected IDs
         ids.forEach(id => {
             const idInput = document.createElement('input');
             idInput.type = 'hidden';
@@ -434,9 +365,6 @@ class DatatableReusable {
         form.submit();
     }
     
-    /**
-     * 🧹 Clear all selections
-     */
     clearAllSelections() {
         this.state.currentSelections = [];
         this.saveSelectionsToDB([]);
@@ -450,27 +378,14 @@ class DatatableReusable {
         this.updateBulkActions();
     }
     
-    /**
-     * 📋 Copy selected to clipboard
-     */
     copySelectedToClipboard() {
-        // Implementation for copy functionality
         this.log('Copy to clipboard requested');
-        // TODO: Implement copy logic
     }
     
-    /**
-     * 🖨️ Print selected items
-     */
     printSelected() {
-        // Implementation for print functionality
         this.log('Print requested');
-        // TODO: Implement print logic
     }
     
-    /**
-     * 💾 Cache current page data
-     */
     cacheCurrentPageData() {
         const table = document.querySelector('table');
         if (!table) return;
@@ -494,9 +409,6 @@ class DatatableReusable {
         this.log('Cached data for', Object.keys(this.state.allPagesDataCache).length, 'items');
     }
     
-    /**
-     * 🔄 Setup HTMX listeners
-     */
     setupHtmxListeners() {
         if (!window.datatableHtmxHandlerAttached) {
             document.body.addEventListener('htmx:afterSwap', (evt) => {
@@ -514,9 +426,6 @@ class DatatableReusable {
         }
     }
     
-    /**
-     * 🎯 Setup event handlers
-     */
     setupEventHandlers() {
         if (!window.datatableBulkActionsAttached) {
             document.addEventListener('click', (e) => {
@@ -558,5 +467,4 @@ class DatatableReusable {
     }
 }
 
-// Export for global use
 window.DatatableReusable = DatatableReusable;
